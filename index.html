@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flags of countries</title>
+    <style>
+        /* Add any custom styles here */
+        #flag {
+            width: 250px;
+            height: 150px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="description">
+        <h1>Flags of Countries Test</h1>
+        <p>Press the button to show a random country flag and select a country 
+        from the dropdown menu to compare.<br />
+        To guess what country this flag belongs select a country in dropdown menu
+        and push button "I guess country!"<br />
+        Also you can use 2 additional buttons to show the flag of the country
+        selected in dropdown and to show  right country for the selected flag 
+        </p>
+    </div>
+
+    <div id="controls">
+        <button id="randomFlagBtn">Show random country flag</button><br><br>
+        <img id="flag" src="emplty_flag.png"
+             alt="Country flag will appear here"><br><br>
+
+        <label for="countryDropdown">Select a country:</label>
+        <input list="countries" id="countryDropdown">
+        <datalist id="countries"></datalist><br><br>
+
+        <button id="compareBtn">I guess country!</button>
+        <button id="showSelectedFlagBtn">Show selected country flag</button>
+        <button id="showCountryNameBtn">Show the country of the flag</button>
+        <p id="countryName"></p> <!-- This will display the name of the current flag -->
+        <p id="result"></p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
