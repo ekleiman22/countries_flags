@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equilateral Triangle Interaction</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #description {
+            background-color: #f0f0f0;
+            height: 20%;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        #canvas-container {
+            height: 60%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #canvas {
+            border: 1px solid #000;
+        }
+
+        #info {
+            height: 20%;
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="description">
+        Select two points on the line to form an equilateral triangle.
+        Then select a point inside the triangle to show perpendiculars.<br />
+        Move point D inside the triangle with the mouse. You can see that sum of lengths
+        of three blue segments is not changed. <br />
+        To stop moving of D click one time on it and release a mouse.
+        For new moving click once more, release the mouse and then keep moving with the mouse.
+    </div>
+    <div id="canvas-container">
+        <canvas id="canvas" width="600" height="400"></canvas>
+    </div>
+    <div id="info" style="margin-top:20px">
+        Sum of FC, GB, AE: <span id="sum"></span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const info = document.getElementById("sum");
+
+        let pointA = null;
+        let pointB = null;
+        let pointC = null;
+        let pointD = null;
+        let state = 0;
+
+        function drawLine(p1, p2, color = 'black', lineWidth = 1) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+        }
+
+        function drawCircle(point, radius = 3, color = 'red') {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawText(text, point, offsetX = 0, offsetY = 0) {
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText(text, point.x + offsetX, point.y + offsetY);
+        }
+
+        function drawTriangle() {
+            drawLine(pointA, pointB);
+            drawLine(pointB, pointC);
+            drawLine(pointC, pointA);
+            drawText("A", pointA, -15, 5);
+            drawText("B", pointB, 5, 5);
+            drawText("C", pointC, 5, -10);
+        }
+
+        function calculateThirdVertex(A, B) {
+            const dx = B.x - A.x;
+            const dy = B.y - A.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const h = dist * Math.sqrt(3) / 2;
+            const midX = (A.x + B.x) / 2;
+            const midY = (A.y + B.y) / 2;
+            const angle = Math.atan2(dy, dx) - Math.PI / 2;
+            return {
+                x: midX + h * Math.cos(angle),
+                y: midY + h * Math.sin(angle)
+            };
+        }
+
+        function projectToLine(point, lineStart, lineEnd) {
+            const L2 = (lineStart.x - lineEnd.x) ** 2 + (lineStart.y - lineEnd.y) ** 2;
+            if (L2 === 0) return lineStart;
+            const t = ((point.x - lineEnd.x) * (lineStart.x - lineEnd.x) + (point.y - lineEnd.y) * (lineStart.y - lineEnd.y)) / L2;
+            return {
+                x: lineEnd.x + t * (lineStart.x - lineEnd.x),
+                y: lineEnd.y + t * (lineStart.y - lineEnd.y)
+            };
+        }
+
+        function calculateLength(p1, p2) {
+            return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+        }
+
+        function drawPerpendiculars() {
+            if (!pointD) return;
+
+            const F = projectToLine(pointD, pointC, pointA); // Updated to project onto AC
+            const G = projectToLine(pointD, pointB, pointC);
+            const E = projectToLine(pointD, pointA, pointB);
+
+            drawLine(pointD, F, 'gray');
+            drawLine(pointD, G, 'gray');
+            drawLine(pointD, E, 'gray');
+
+            drawText("D", pointD, 5, 5);
+            drawText("F", F, 5, 5);
+            drawText("G", G, 5, 5);
+            drawText("E", E, 5, 5);
+
+            const FC = calculateLength(F, pointC);
+            const GB = calculateLength(G, pointB);
+            const AE = calculateLength(E, pointA);
+
+            drawLine(F, pointC, 'blue', 2);
+            drawLine(G, pointB, 'blue', 2);
+            drawLine(E, pointA, 'blue', 2);
+
+            info.textContent = (FC + GB + AE).toFixed(2);
+        }
+
+        canvas.addEventListener("click", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (state === 0) {
+                pointA = { x, y };
+                drawCircle(pointA);
+                state = 1;
+            } else if (state === 1) {
+                pointB = { x, y };
+                drawCircle(pointB);
+                pointC = calculateThirdVertex(pointA, pointB);
+                drawTriangle();
+                state = 2;
+            } else if (state === 2) {
+                if (!pointD || calculateLength({ x, y }, pointD) > 10) {
+                    pointD = { x, y };
+                    drawCircle(pointD, 4, 'green');
+                    drawTriangle();
+                    drawPerpendiculars();
+                }
+            }
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (state === 2 && pointD) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                pointD = { x, y };
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTriangle();
+                drawCircle(pointA);
+                drawCircle(pointB);
+                drawCircle(pointD, 4, 'green');
+                drawPerpendiculars();
+            }
+        });
+        canvas.addEventListener('mouseup', function (evt) {
+            if (state === 2 && pointD)
+                state = 3;
+            else {
+                if (state === 3 && pointD)
+                    state = 2;
+            }
+
+        }, false);
+
+        function drawBaseLine() {
+            const startX = 50;
+            const endX = canvas.width - 50;
+            const baseY = canvas.height - 20;
+            drawLine({ x: startX, y: baseY }, { x: endX, y: baseY });
+        }
+
+        drawBaseLine();
+    </script>
+</body>
+</html>
